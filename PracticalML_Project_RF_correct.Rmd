@@ -1,0 +1,132 @@
+---
+title:    "Practical Machine Learning: Course Project"
+subtitle: "Analysis of Weight Lifting Exercise Dataset"
+output: 
+  html_document:
+    keep_md: true
+author: by_mcmillan03
+---
+
+"Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). "
+
+```{r init, echo=TRUE}
+library(caret)
+library(plyr)
+
+```
+
+## Loading and preprocessing the data
+
+Set working directory to parent directory of data. Raw data in activity.csv should appear in an activity subdirectory.
+
+```{r load_data, echo=TRUE}
+# Read the data set and convert the date field to Date objects
+#training = read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"),header = TRUE)
+
+setwd("C:/Users/smcmillan/Documents/Online\ Courses/JHU_08_Practical_Machine_Learning/Assignments/Project/PracticalML")
+getwd()
+wl_data = read.csv("../pml-training.csv", stringsAsFactors = TRUE, na.strings=c("NA",""), header = TRUE)
+
+# Only choose the columns with enough "information" (the testing set has zero information for the others, actually)
+colnames = c("user_name",
+             #"raw_timestamp_part_1", "raw_timestamp_part_2", "cvtd_timestamp",
+             "new_window", #Always "no" in final_testing
+             "num_window",
+             "roll_belt", "pitch_belt", "yaw_belt", "total_accel_belt",
+             "gyros_belt_x", "gyros_belt_y", "gyros_belt_z",
+             "accel_belt_x", "accel_belt_y", "accel_belt_z",
+             "magnet_belt_x", "magnet_belt_y", "magnet_belt_z",
+             "roll_arm", "pitch_arm", "yaw_arm", "total_accel_arm",
+             "gyros_arm_x", "gyros_arm_y", "gyros_arm_z",
+             "accel_arm_x", "accel_arm_y", "accel_arm_z",
+             "magnet_arm_x", "magnet_arm_y", "magnet_arm_z",
+             "roll_dumbbell", "pitch_dumbbell", "yaw_dumbbell", "total_accel_dumbbell",
+             "gyros_dumbbell_x", "gyros_dumbbell_y", "gyros_dumbbell_z",
+             "accel_dumbbell_x", "accel_dumbbell_y", "accel_dumbbell_z",
+             "magnet_dumbbell_x", "magnet_dumbbell_y", "magnet_dumbbell_z",
+             "roll_forearm", "pitch_forearm", "yaw_forearm", "total_accel_forearm",
+             "gyros_forearm_x", "gyros_forearm_y", "gyros_forearm_z",
+             "accel_forearm_x", "accel_forearm_y", "accel_forearm_z",
+             "magnet_forearm_x", "magnet_forearm_y", "magnet_forearm_z",
+             "classe"
+             )
+#we_data = wl_data[,colnames]
+we_data = subset(wl_data[,colnames], new_window=="no")
+summary(we_data)
+
+set.seed(8088)
+inTrain = createDataPartition(y=we_data$classe, p = 0.7, list=FALSE)
+training = we_data[inTrain,]
+testing  = we_data[-inTrain,]
+#str(training)
+#summary(training)
+#names(training)
+#head(training)
+```
+
+## Decision Tree Classification
+
+```{r decision_tree_model, echo=TRUE}
+tree_model_file = "my_tree_model.rds"
+if (file.exists(tree_model_file)) {
+  tree_model = readRDS(tree_model_file)
+} else {
+  tree_model = train(classe~., data=training, method="rpart")
+  saveRDS(tree_model, "my_tree_model.rds")
+}
+
+summary(tree_model)
+library(rpart.plot)
+library(rattle)
+fancyRpartPlot(tree_model$finalModel)
+predictions = predict(tree_model, newdata=testing)
+confusionMatrix(predictions, testing$classe)
+```
+
+### Random Forest Classification
+
+```{r random_forest_model, echo=TRUE}
+rf_model_file = "my_rf_model.rds"
+if (file.exists(rf_model_file)){
+  rf_model = readRDS(rf_model_file)
+} else {
+  rf_model = train(classe~., data=testing, method="rf",prox=TRUE)
+  saveRDS(rf_model, rf_model_file)
+}
+rf_model
+getTree(rf_model$finalModel, k=2)
+
+```
+
+## Predicting Test Cases
+
+```{r final_tests, echo=TRUE}
+#final_testing = read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"), header = TRUE)
+final_testing = read.csv("../pml-testing.csv", stringsAsFactors = TRUE, na.strings=c("NA",""), header = TRUE)
+#final_testing = subset(pml_testing[,colnames], new_window=="no")
+#summary(final_testing)
+final_predictions = predict(rf_model, newdata=final_testing)
+final_predictions
+```
+
+## Outputting Test Case Predictions
+
+```{r write_output_files, echo=TRUE}
+
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("../test_predictions/problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+pml_write_files(final_predictions)
+
+```
+
+## Document Environment
+
+```{r env, echo=TRUE}
+sessionInfo()
+```
