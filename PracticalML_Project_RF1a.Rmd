@@ -1,0 +1,235 @@
+---
+title:    "Practical Machine Learning: Course Project"
+subtitle: "Analysis of Weight Lifting Exercise Dataset"
+output: 
+  html_document:
+    keep_md: true
+author: by_mcmillan03
+---
+
+```{r init, echo=FALSE, warning=FALSE, message=FALSE}
+#library(mlearning)
+library(caret)
+library(rpart.plot)
+library(rattle)
+library(randomForest)
+library(klaR)
+library(MASS)
+library(plyr)
+library(parallel)
+library(splines)
+library(survival)
+library(gbm)
+
+# Plot the confusion matrix with a green/red heat map
+plotConfusionHeatMap = function(predicted, actual){
+  confusion_matrix = confusion(predicted, actual)
+  # The above rescales the confusion matrix such that columns sum to 100.
+  opar <- par(mar=c(5.1, 6.1, 2, 2))
+  x.orig <- unclass(confusion_matrix)
+  prior(confusion_matrix) <- 100 
+  x <- unclass(confusion_matrix)
+  x <- log(x + 0.5) * 2.33
+  x[x < 0] <- NA
+  x[x > 10] <- 10
+  
+  diag(x) <- -diag(x)
+  
+  image(1:ncol(x), 1:ncol(x),
+        -(x[, nrow(x):1]), xlab='Actual', ylab='',
+        col=colorRampPalette(c(hsv(h = 0, s = 0.9, v = 0.9, alpha = 1), 
+                               hsv(h = 0, s = 0, v = 0.9, alpha = 1), 
+                               hsv(h = 2/6, s = 0.9, v = 0.9, alpha = 1)))(41), 
+        xaxt='n', yaxt='n', zlim=c(-10, 10))
+  axis(1, at=1:ncol(x), labels=colnames(x), cex.axis=0.8)
+  axis(2, at=ncol(x):1, labels=colnames(x), las=1, cex.axis=0.8)
+  title(ylab='Predicted', line=4.5)
+  abline(h = 0:ncol(x) + 0.5, col = 'gray')
+  abline(v = 0:ncol(x) + 0.5, col = 'gray')
+  text(1:ncol(x), rep(ncol(x):1, each=ncol(x)), 
+       labels = sub('^0$', '', round(c(x.orig), 0)))
+  box(lwd=2)
+  par(opar) # reset par
+}
+
+
+```
+
+## Introduction
+
+The Weight Lifting dataset consists of sensor data recorded for six participants performing "one set of 10 repititions of the Unilateral Dumbbell Biceps Curl" using either correct (classe = A label) or incorrect (classe = B through E label) technique.  The goal of this analysis is to train a model using only the raw sensor data as the input to predict what class of lifting technique is occuring.  More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+
+## Data Exploration and Cleaning
+
+The dataset consists of 160 fields, including both raw sensor data and summary statistics of intervals of raw data for four accelerometers.  These accelerometers measure the movement of the upper arm, forearm, belt and dumbbell.  When the record has new\_window="yes", it will also contain summary statistics (mean and variance) for an interval of the raw sensor data; otherwise the summary stats will be "NA". Over 95% of the records (and all the final testing records) do not contain summary stats so these fields are omitted from the training set.  
+
+The record number field ("X") was also removed it would have no predictive capability on the testing set for which the record numbers had been changed (reset to 1 through 20).  Note that in training a random forest model using this field, the resulting accuracy is above 99.9% on the validation set.  It is the most important variable with a "MeanDecreaseGini" that was order of magnitude higher then next most important variables.  
+
+All timestamp fields were removed (especially the factor variable) as it could be used to "place" the test records within the larger dataset and use the surrounding records' "classe" label for prediction without any sensor information.  Note that after the record number and timestamp  variables, the most important variable (again according to a randomForest model) was the num\_window variable, which is cruder way to "place"" the test records within the larger dataset to determine the "classe" as well.  This variable was also removed.
+
+
+```{r load_data, echo=FALSE}
+setwd("C:/Users/smcmillan/Documents/Online\ Courses/JHU_08_Practical_Machine_Learning/Assignments/Project/PracticalML")
+
+training_file = "../pml-training.csv"
+if (file.exists(training_file)) {
+  pml_training_data = read.csv(training_file,
+                               stringsAsFactors = TRUE,
+                               na.strings=c("NA",""),
+                               header = TRUE)
+} else {
+  pml_training_data = read.csv(url("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"),
+                               stringsAsFactors = TRUE,
+                               na.strings=c("NA",""),
+                               header = TRUE)
+}
+
+# Only choose the columns with enough "information" (the testing set has zero information for the others, actually)
+allnames = names(pml_training_data)[colMeans(is.na(pml_training_data)) < 0.5]
+
+colnames = allnames[! allnames %in%
+                      c("X", "user_name",
+                        "raw_timestamp_part_1", "raw_timestamp_part_2","cvtd_timestamp",
+                        "new_window", "num_window")]
+
+# Note: new_window field in final testing data is "no" for all records.  Chose same records here.
+tmp_data = pml_training_data[,colnames]
+```
+
+After all these aforementioned fields are removed, the resulting dataset contains `r dim(tmp_data)[1]` records with the following `r dim(tmp_data)[2]` fields:
+
+```{r column_names, echo=FALSE}
+colnames
+```
+
+These records are split into 30% training and 70% validation sets.  Note that my final model using randomForests take a long time to train even with 30% yet they still perform very well.
+
+```{r subset, echo=FALSE}
+# split into training and testing sets,
+# we only need a small portion of the data to get good performance
+set.seed(8088)
+inTrain = createDataPartition(y=tmp_data$classe, p = 0.3, list=FALSE)
+training = tmp_data[ inTrain,]
+testing  = tmp_data[-inTrain,]
+```
+
+## Random Forest Classification Using All Sensor Fields
+
+In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation.  The following is the results of this model training:
+
+```{r random_forest_model, echo=FALSE}
+rf_model_file = "my_rf_model1_new.rds"
+if (file.exists(rf_model_file)){
+  rf_model = readRDS(rf_model_file)
+} else {
+  rf_model = train(classe~., data=training,
+                   method="rf",
+                   trControl=trainControl(method="cv", number=10),
+                   prox=TRUE, allowParallel=TRUE)
+  saveRDS(rf_model, rf_model_file)
+}
+
+#output model results and variable importance
+rf_model
+```
+
+The following shows that the of the model achieves perfect prediction (100% accuracy) on the training set:
+
+```{r training_acc, echo=TRUE}
+confusionMatrix(predict(rf_model, newdata=training), training$classe)
+```
+
+One expects the out-of-sample accuracy to be less, and indeed the following shows the validation set accuracy to be 97.87%:
+
+```{r validation_acc, echo=TRUE}
+confusionMatrix(predict(rf_model, newdata=testing), testing$classe)
+```
+
+Note: this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
+
+## Reduced Dataset
+
+Training the random forest model on all the sensor values took a long time so I decided to use variable importance to reduce the set of features further.  The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):
+
+```{r varimp, echo=FALSE}
+varImpPlot(rf_model$finalModel)
+```
+
+From this, the 17 most important variables are extractd and used to train a random forest model and a for comparison.
+
+```{r reduced_subset, echo=FALSE}
+colnames2 = c("classe",
+              "roll_belt", "pitch_forearm",
+              "yaw_belt", "magnet_dumbbell_z", "pitch_belt", "magnet_dumbbell_y", "roll_forearm", "accel_dumbbell_y",
+              "accel_forearm_x", "roll_dumbbell", "magnet_dumbbell_x", "accel_dumbbell_z",
+              "magnet_belt_z", "magnet_belt_y", "magnet_forearm_z",
+              "accel_belt_z", "total_accel_dumbbell")
+
+training_reduced = training[,colnames2]
+```
+
+#### Random Forest Model (Reduced Dataset)
+
+Using the top 17 (about on third) most "important" variables from above, another random forest model is trained.  It also achieved perfect accuracy on the training set with the following results using the validation set:
+
+```{r rf_reduced, echo=FALSE}
+rf_model_file2 = "my_rf_model1_reduced.rds"
+if (file.exists(rf_model_file2)){
+  rf_model2 = readRDS(rf_model_file2)
+} else {
+  rf_model2 = train(classe~.,
+                    data=training_reduced, 
+                    method="rf",
+                    trControl=trainControl(method="cv", number=10),
+                    prox=TRUE,
+                    allowParallel=TRUE)
+  saveRDS(rf_model2, rf_model_file2)
+}
+
+#output model results and variable importance
+#rf_model2
+#varImpPlot(rf_model2$finalModel)
+
+#predict performance using validation set.
+#confusionMatrix(predict(rf_model2, newdata=training_reduced), training_reduced$classe)
+confusionMatrix(predict(rf_model2, newdata=testing), testing$classe)
+```
+
+As expected the out-of-sample accuracy is only slightly lower at 97.18%
+
+#### Generalized Boosted Regression Model (Reduced Dataset)
+
+In this section, a GBM model (distribution = "multinomial") is trained on the reduced dataset (with 17 features) for comparison with the random forest model.  For this model the training set accuracy is 96.98% accuracy:
+
+```{r reduced_gbm, echo=FALSE}
+gbm_model_file = "my_gmb_model1_reduced.rds"
+if (file.exists(gbm_model_file)){
+  gbm_model = readRDS(gbm_model_file)
+} else {
+  gbm_model = train(classe~., data=training_reduced, method="gbm",distribution="multinomial")
+  saveRDS(gbm_model, gbm_model_file)
+}
+
+#output model results and variable importance
+#gbm_model
+
+#predict performance using validation set.
+confusionMatrix(predict(gbm_model, newdata=training_reduced), training_reduced$classe)
+```
+
+But the out of sample accuracy is still respectable at 94.26%.
+
+```{r gbm_test_acc, echo=FALSE}
+confusionMatrix(predict(gbm_model, newdata=testing), testing$classe)
+```
+
+## Conclusion
+
+Both the random forest and GBM (multinomial) models are both very accurate at determining the "classe" of a given set of raw sensor values.  In fact, by using the random forest's guidance with variable importance, a model with one third of the original features is still able to exceed 97% and 94% out of sample accuracy for random forest and GBM models respectively.
+
+## Appendix: Document Environment
+
+```{r env, echo=TRUE}
+sessionInfo()
+```
