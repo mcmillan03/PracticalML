@@ -62,12 +62,19 @@ The Weight Lifting dataset consists of sensor data recorded for six participants
 
 ## Data Exploration and Cleaning
 
+#### Removing Summary Statistic Fields
+
 The dataset consists of 160 fields, including both raw sensor data and summary statistics of intervals of raw data for four accelerometers.  These accelerometers measure the movement of the upper arm, forearm, belt and dumbbell.  When the record has new\_window="yes", it will also contain summary statistics (mean and variance) for an interval of the raw sensor data; otherwise the summary stats will be "NA". Over 95% of the records (and all the final testing records) do not contain summary stats so these fields are omitted from the training set.  
 
-The record number field ("X") was also removed it would have no predictive capability on the testing set for which the record numbers had been changed (reset to 1 through 20).  Note that in training a random forest model using this field, the resulting accuracy is above 99.9% on the validation set.  It is the most important variable with a "MeanDecreaseGini" that was order of magnitude higher then next most important variables.  
+#### Removing the Record Number ("X") Field
 
-All timestamp fields were removed (especially the factor variable) as it could be used to "place" the test records within the larger dataset and use the surrounding records' "classe" label for prediction without any sensor information.  Note that after the record number and timestamp  variables, the most important variable (again according to a randomForest model) was the num\_window variable, which is cruder way to "place"" the test records within the larger dataset to determine the "classe" as well.  This variable was also removed.
+Note that in training a random forest model using the record number ("X") field, the resulting accuracy on the training and validation sets is above 99.9%.  It is the most important variable in this model with a "MeanDecreaseGini" that was order of magnitude higher than next most important variable.  However, the record number field would have no predictive capability on the final testing set for which the record numbers had been changed (reset to 1 through 20).  Indeed, with the record numbers reset, the model would only predict a single classe A (which is the classe of the training records whose record numbers are in this range); therefore, this field was also removed.
 
+#### Removing Timestamp and Window Fields
+
+All timestamp fields were removed (especially the factor variable) as it could be used by the model to "place" the test records within the larger dataset and use the surrounding records' "classe" label for prediction without any sensor information.  Note that after the record number and timestamp variables, the most important variable (again according to a randomForest model) was the num\_window variable, which is cruder way to "place"" the test records within the larger dataset to determine the "classe" as well.  This variable was also removed.
+
+#### Fields to Train With
 
 ```{r load_data, echo=FALSE}
 setwd("C:/Users/smcmillan/Documents/Online\ Courses/JHU_08_Practical_Machine_Learning/Assignments/Project/PracticalML")
@@ -103,7 +110,7 @@ After all these aforementioned fields are removed, the resulting dataset contain
 colnames
 ```
 
-These records are split into 30% training and 70% validation sets.  Note that my final model using randomForests take a long time to train even with 30% yet they still perform very well.
+Due to the large amount of training data available, I am using a much smaller percentage of training data. These records are split into 30% training and 70% validation sets.  Note that my final models using random forests take a long time to train even with 30% yet they still perform very well.
 
 ```{r subset, echo=FALSE}
 # split into training and testing sets,
@@ -116,7 +123,9 @@ testing  = tmp_data[-inTrain,]
 
 ## Random Forest Classification Using All Sensor Fields
 
-In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation. Figure 1(a) shows that the of the model achieves perfect prediction (100% accuracy) on the training set.  One expects the out-of-sample accuracy (accuracy of the model on data not in the training set) to be less, and indeed the Figure 1(b) shows the validation set accuracy to be 97.87%.  Note that this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
+In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation. Figure 1(a) shows that the of the model achieves perfect prediction (100% accuracy) on the training set.  
+
+With perfect performance on the training set, it is hard to estimate the out-of-sample accuracy (accuracy of the model on data not in the training set). One expects the out-of-sample accuracy to be less, and indeed the Figure 1(b) shows the validation set accuracy to be 97.87% - very high but still less than the accuracy on the training set.  The 95% confidence interval estimates the accuracy of this model to be between 97.61% and 98.1%.  Note, however, that this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
 
 
 ```{r random_forest_model, echo=FALSE}
@@ -137,7 +146,7 @@ cm_rf$table
 *(a) Perfomance on the training set.*
 ```{r validation_acc, echo=FALSE}
 cm_rf2 = confusionMatrix(predict(rf_model, newdata=testing), testing$classe)
-cm_rf2$table
+cm_rf2
 ```  
 *(b) Performance on the validation set.*
 
@@ -188,13 +197,18 @@ if (file.exists(rf_model_file2)){
 #rf_model2
 #varImpPlot(rf_model2$finalModel)
 
-#predict performance using validation set.
-#confusionMatrix(predict(rf_model2, newdata=training_reduced), training_reduced$classe)
+#measure performance on the training set.
+cm_rf3a = confusionMatrix(predict(rf_model2, newdata=training_reduced), training_reduced$classe)
+cm_rf3a$table
+```  
+*(a) Perfomance on the training set (100% accuracy).*
+```{r rf_reduced_validation_acc, echo=FALSE}
 cm_rf3 = confusionMatrix(predict(rf_model2, newdata=testing), testing$classe)
-cm_rf3$table
-```
+cm_rf3
+```  
+*(b) Performance on the validation set.*
 
-*Figure 3. Perfomance on the validation data of the random forest model trained from a reduced set of features (note that it achieved perfect accuracy on the training set).*
+*Figure 3. Perfomance  of the random forest model trained from a reduced set of features.*
 
 
 #### Generalized Boosted Regression Model (Reduced Dataset)
@@ -215,12 +229,12 @@ if (file.exists(gbm_model_file)){
 
 #predict performance using validation set.
 cm_gbm1 = confusionMatrix(predict(gbm_model, newdata=training_reduced), training_reduced$classe)
-cm_gbm1$table
+cm_gbm1
 ```  
 *(a) training set*
 ```{r reduced_gbm_val, echo=FALSE}
 cm_gbm2 = confusionMatrix(predict(gbm_model, newdata=testing), testing$classe)
-cm_gbm2$table
+cm_gbm2
 ```  
 *(b) validation set*
 
