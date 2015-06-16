@@ -116,7 +116,8 @@ testing  = tmp_data[-inTrain,]
 
 ## Random Forest Classification Using All Sensor Fields
 
-In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation.  The following is the results of this model training:
+In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation. Figure 1(a) shows that the of the model achieves perfect prediction (100% accuracy) on the training set.  One expects the out-of-sample accuracy (accuracy of the model on data not in the training set) to be less, and indeed the Figure 1(b) shows the validation set accuracy to be 97.87%.  Note that this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
+
 
 ```{r random_forest_model, echo=FALSE}
 rf_model_file = "my_rf_model1_new.rds"
@@ -130,33 +131,29 @@ if (file.exists(rf_model_file)){
   saveRDS(rf_model, rf_model_file)
 }
 
-#output model results and variable importance
-rf_model
-```
+cm_rf = confusionMatrix(predict(rf_model, newdata=training), training$classe)
+cm_rf$table
+```  
+*(a) Perfomance on the training set.*
+```{r validation_acc, echo=FALSE}
+cm_rf2 = confusionMatrix(predict(rf_model, newdata=testing), testing$classe)
+cm_rf2$table
+```  
+*(b) Performance on the validation set.*
 
-The following shows that the of the model achieves perfect prediction (100% accuracy) on the training set:
-
-```{r training_acc, echo=TRUE}
-confusionMatrix(predict(rf_model, newdata=training), training$classe)
-```
-
-One expects the out-of-sample accuracy to be less, and indeed the following shows the validation set accuracy to be 97.87%:
-
-```{r validation_acc, echo=TRUE}
-confusionMatrix(predict(rf_model, newdata=testing), testing$classe)
-```
-
-Note: this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
+*Figure 1. Performance of the random forest model against the (a) training set showing 100% accuracy, and (b) validation set showning 97.87% accuracy.*
 
 ## Reduced Dataset
 
-Training the random forest model on all the sensor values took a long time so I decided to use variable importance to reduce the set of features further.  The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):
+Training the random forest model on all the sensor values took a long time, so I decided to use variable importance to reduce the set of features further.  The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):
 
 ```{r varimp, echo=FALSE}
 varImpPlot(rf_model$finalModel)
 ```
 
-From this, the 17 most important variables are extractd and used to train a random forest model and a for comparison.
+*Figure 2. Variable importance computed when training the random forest model.*
+
+From this, the 17 most important variables are extracted and used to train a random forest model and a generalized boosted regression model (GBM) for comparison.
 
 ```{r reduced_subset, echo=FALSE}
 colnames2 = c("classe",
@@ -171,7 +168,7 @@ training_reduced = training[,colnames2]
 
 #### Random Forest Model (Reduced Dataset)
 
-Using the top 17 (about on third) most "important" variables from above, another random forest model is trained.  It also achieved perfect accuracy on the training set with the following results using the validation set:
+Using the top 17 (about on third) most "important" variables from above, another random forest model is trained.  It also achieved perfect accuracy on the training set.  The accuracy of the model using the validation set is shown by the confusion matrix in Figure 3 to be 97.18%
 
 ```{r rf_reduced, echo=FALSE}
 rf_model_file2 = "my_rf_model1_reduced.rds"
@@ -193,14 +190,16 @@ if (file.exists(rf_model_file2)){
 
 #predict performance using validation set.
 #confusionMatrix(predict(rf_model2, newdata=training_reduced), training_reduced$classe)
-confusionMatrix(predict(rf_model2, newdata=testing), testing$classe)
+cm_rf3 = confusionMatrix(predict(rf_model2, newdata=testing), testing$classe)
+cm_rf3$table
 ```
 
-As expected the out-of-sample accuracy is only slightly lower at 97.18%
+*Figure 3. Perfomance on the validation data of the random forest model trained from a reduced set of features (note that it achieved perfect accuracy on the training set).*
+
 
 #### Generalized Boosted Regression Model (Reduced Dataset)
 
-In this section, a GBM model (distribution = "multinomial") is trained on the reduced dataset (with 17 features) for comparison with the random forest model.  For this model the training set accuracy is 96.98% accuracy:
+In this section, a GBM model (distribution = "multinomial") is trained on the reduced dataset (with 17 features) for comparison with the random forest model.  As shown in Figure 4, the training set accuracy for this model the training is 96.98%.  The out of sample accuracy using the validation set still very good at 94.26%.
 
 ```{r reduced_gbm, echo=FALSE}
 gbm_model_file = "my_gmb_model1_reduced.rds"
@@ -215,18 +214,22 @@ if (file.exists(gbm_model_file)){
 #gbm_model
 
 #predict performance using validation set.
-confusionMatrix(predict(gbm_model, newdata=training_reduced), training_reduced$classe)
-```
+cm_gbm1 = confusionMatrix(predict(gbm_model, newdata=training_reduced), training_reduced$classe)
+cm_gbm1$table
+```  
+*(a) training set*
+```{r reduced_gbm_val, echo=FALSE}
+cm_gbm2 = confusionMatrix(predict(gbm_model, newdata=testing), testing$classe)
+cm_gbm2$table
+```  
+*(b) validation set*
 
-But the out of sample accuracy is still respectable at 94.26%.
+*Figure 4. Confusion matrix for GBM model using a reduced set of features.*
 
-```{r gbm_test_acc, echo=FALSE}
-confusionMatrix(predict(gbm_model, newdata=testing), testing$classe)
-```
 
 ## Conclusion
 
-Both the random forest and GBM (multinomial) models are both very accurate at determining the "classe" of a given set of raw sensor values.  In fact, by using the random forest's guidance with variable importance, a model with one third of the original features is still able to exceed 97% and 94% out of sample accuracy for random forest and GBM models respectively.
+Both the random forest and GBM models are both very accurate at determining the "classe" of a given set of raw sensor values.  In fact, by using the random forest's computation regarding variable importance, a model with one third of the original features is still able to exceed 97% and 94% out-of-sample accuracy for random forest and GBM (multinomial) models, respectively.
 
 ## Appendix: Document Environment
 

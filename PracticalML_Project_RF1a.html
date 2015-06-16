@@ -99,207 +99,68 @@ img {
 </div>
 <div id="random-forest-classification-using-all-sensor-fields" class="section level2">
 <h2>Random Forest Classification Using All Sensor Fields</h2>
-<p>In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation. The following is the results of this model training:</p>
-<pre><code>## Random Forest 
-## 
-## 5889 samples
-##   52 predictor
-##    5 classes: 'A', 'B', 'C', 'D', 'E' 
-## 
-## No pre-processing
-## Resampling: Cross-Validated (10 fold) 
-## 
-## Summary of sample sizes: 5300, 5299, 5301, 5300, 5299, 5300, ... 
-## 
-## Resampling results across tuning parameters:
-## 
-##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
-##    2    0.9769028  0.9707680  0.007609952  0.009634983
-##   27    0.9811533  0.9761504  0.005846279  0.007399336
-##   52    0.9762314  0.9699242  0.007055736  0.008930496
-## 
-## Accuracy was used to select the optimal model using  the largest value.
-## The final value used for the model was mtry = 27.</code></pre>
-<p>The following shows that the of the model achieves perfect prediction (100% accuracy) on the training set:</p>
-<pre class="r"><code>confusionMatrix(predict(rf_model, newdata=training), training$classe)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
+<p>In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation. Figure 1(a) shows that the of the model achieves perfect prediction (100% accuracy) on the training set. One expects the out-of-sample accuracy (accuracy of the model on data not in the training set) to be less, and indeed the Figure 1(b) shows the validation set accuracy to be 97.87%. Note that this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.</p>
+<pre><code>##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1674    0    0    0    0
 ##          B    0 1140    0    0    0
 ##          C    0    0 1027    0    0
 ##          D    0    0    0  965    0
-##          E    0    0    0    0 1083
-## 
-## Overall Statistics
-##                                      
-##                Accuracy : 1          
-##                  95% CI : (0.9994, 1)
-##     No Information Rate : 0.2843     
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16  
-##                                      
-##                   Kappa : 1          
-##  Mcnemar's Test P-Value : NA         
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Prevalence             0.2843   0.1936   0.1744   0.1639   0.1839
-## Detection Rate         0.2843   0.1936   0.1744   0.1639   0.1839
-## Detection Prevalence   0.2843   0.1936   0.1744   0.1639   0.1839
-## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000</code></pre>
-<p>One expects the out-of-sample accuracy to be less, and indeed the following shows the validation set accuracy to be 97.87%:</p>
-<pre class="r"><code>confusionMatrix(predict(rf_model, newdata=testing), testing$classe)</code></pre>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
+##          E    0    0    0    0 1083</code></pre>
+<p><em>(a) Perfomance on the training set.</em></p>
+<pre><code>##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 3886   69    0    0    0
 ##          B   17 2561   47    1    4
 ##          C    3   24 2332   44   12
 ##          D    0    2   16 2185   32
-##          E    0    1    0   21 2476
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.9787         
-##                  95% CI : (0.9761, 0.981)
-##     No Information Rate : 0.2844         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.973          
-##  Mcnemar's Test P-Value : NA             
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9949   0.9639   0.9737   0.9707   0.9810
-## Specificity            0.9930   0.9938   0.9927   0.9956   0.9980
-## Pos Pred Value         0.9826   0.9738   0.9656   0.9776   0.9912
-## Neg Pred Value         0.9980   0.9914   0.9944   0.9943   0.9957
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2830   0.1865   0.1698   0.1591   0.1803
-## Detection Prevalence   0.2880   0.1915   0.1759   0.1627   0.1819
-## Balanced Accuracy      0.9939   0.9788   0.9832   0.9832   0.9895</code></pre>
-<p>Note: this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.</p>
+##          E    0    1    0   21 2476</code></pre>
+<p><em>(b) Performance on the validation set.</em></p>
+<p><em>Figure 1. Performance of the random forest model against the (a) training set showing 100% accuracy, and (b) validation set showning 97.87% accuracy.</em></p>
 </div>
 <div id="reduced-dataset" class="section level2">
 <h2>Reduced Dataset</h2>
-<p>Training the random forest model on all the sensor values took a long time so I decided to use variable importance to reduce the set of features further. The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):</p>
+<p>Training the random forest model on all the sensor values took a long time, so I decided to use variable importance to reduce the set of features further. The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):</p>
 <p><img src="data:image/png;base64,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" /></p>
-<p>From this, the 17 most important variables are extractd and used to train a random forest model and a for comparison.</p>
+<p><em>Figure 2. Variable importance computed when training the random forest model.</em></p>
+<p>From this, the 17 most important variables are extracted and used to train a random forest model and a generalized boosted regression model (GBM) for comparison.</p>
 <div id="random-forest-model-reduced-dataset" class="section level4">
 <h4>Random Forest Model (Reduced Dataset)</h4>
-<p>Using the top 17 (about on third) most “important” variables from above, another random forest model is trained. It also achieved perfect accuracy on the training set with the following results using the validation set:</p>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
+<p>Using the top 17 (about on third) most “important” variables from above, another random forest model is trained. It also achieved perfect accuracy on the training set. The accuracy of the model using the validation set is shown by the confusion matrix in Figure 3 to be 97.18%</p>
+<pre><code>##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 3881   72    3    4    1
 ##          B   21 2534   57    1   19
 ##          C    2   41 2298   64    9
 ##          D    2    6   37 2162   22
-##          E    0    4    0   20 2473
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.972           
-##                  95% CI : (0.9691, 0.9747)
-##     No Information Rate : 0.2844          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.9645          
-##  Mcnemar's Test P-Value : 1.44e-09        
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9936   0.9537   0.9595   0.9605   0.9798
-## Specificity            0.9919   0.9912   0.9898   0.9942   0.9979
-## Pos Pred Value         0.9798   0.9628   0.9519   0.9699   0.9904
-## Neg Pred Value         0.9974   0.9889   0.9914   0.9923   0.9955
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2826   0.1845   0.1673   0.1574   0.1801
-## Detection Prevalence   0.2884   0.1917   0.1758   0.1623   0.1818
-## Balanced Accuracy      0.9927   0.9724   0.9746   0.9773   0.9888</code></pre>
-<p>As expected the out-of-sample accuracy is only slightly lower at 97.18%</p>
+##          E    0    4    0   20 2473</code></pre>
+<p><em>Figure 3. Perfomance on the validation data of the random forest model trained from a reduced set of features (note that it achieved perfect accuracy on the training set).</em></p>
 </div>
 <div id="generalized-boosted-regression-model-reduced-dataset" class="section level4">
 <h4>Generalized Boosted Regression Model (Reduced Dataset)</h4>
-<p>In this section, a GBM model (distribution = “multinomial”) is trained on the reduced dataset (with 17 features) for comparison with the random forest model. For this model the training set accuracy is 96.98% accuracy:</p>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
+<p>In this section, a GBM model (distribution = “multinomial”) is trained on the reduced dataset (with 17 features) for comparison with the random forest model. As shown in Figure 4, the training set accuracy for this model the training is 96.98%. The out of sample accuracy using the validation set still very good at 94.26%.</p>
+<pre><code>##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1647   21    1    1    0
 ##          B   11 1085   27    4    7
 ##          C   12   27  981   20   10
 ##          D    3    5   16  940    8
-##          E    1    2    2    0 1058
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.9698         
-##                  95% CI : (0.9651, 0.974)
-##     No Information Rate : 0.2843         
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16      
-##                                          
-##                   Kappa : 0.9618         
-##  Mcnemar's Test P-Value : 0.000565       
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9839   0.9518   0.9552   0.9741   0.9769
-## Specificity            0.9945   0.9897   0.9858   0.9935   0.9990
-## Pos Pred Value         0.9862   0.9568   0.9343   0.9671   0.9953
-## Neg Pred Value         0.9936   0.9884   0.9905   0.9949   0.9948
-## Prevalence             0.2843   0.1936   0.1744   0.1639   0.1839
-## Detection Rate         0.2797   0.1842   0.1666   0.1596   0.1797
-## Detection Prevalence   0.2836   0.1926   0.1783   0.1651   0.1805
-## Balanced Accuracy      0.9892   0.9707   0.9705   0.9838   0.9879</code></pre>
-<p>But the out of sample accuracy is still respectable at 94.26%.</p>
-<pre><code>## Confusion Matrix and Statistics
-## 
-##           Reference
+##          E    1    2    2    0 1058</code></pre>
+<p><em>(a) training set</em></p>
+<pre><code>##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 3788  108    5    5    7
 ##          B   65 2423  121    8   50
 ##          C   32   90 2197   89   31
 ##          D   18   14   68 2138   37
-##          E    3   22    4   11 2399
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.9426          
-##                  95% CI : (0.9386, 0.9465)
-##     No Information Rate : 0.2844          
-##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
-##                                           
-##                   Kappa : 0.9274          
-##  Mcnemar's Test P-Value : 8.061e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9698   0.9119   0.9173   0.9498   0.9505
-## Specificity            0.9873   0.9780   0.9787   0.9881   0.9964
-## Pos Pred Value         0.9681   0.9085   0.9008   0.9398   0.9836
-## Neg Pred Value         0.9880   0.9789   0.9825   0.9901   0.9889
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2758   0.1764   0.1600   0.1557   0.1747
-## Detection Prevalence   0.2849   0.1942   0.1776   0.1657   0.1776
-## Balanced Accuracy      0.9785   0.9450   0.9480   0.9689   0.9735</code></pre>
+##          E    3   22    4   11 2399</code></pre>
+<p><em>(b) validation set</em></p>
+<p><em>Figure 4. Confusion matrix for GBM model using a reduced set of features.</em></p>
 </div>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>Both the random forest and GBM (multinomial) models are both very accurate at determining the “classe” of a given set of raw sensor values. In fact, by using the random forest’s guidance with variable importance, a model with one third of the original features is still able to exceed 97% and 94% out of sample accuracy for random forest and GBM models respectively.</p>
+<p>Both the random forest and GBM models are both very accurate at determining the “classe” of a given set of raw sensor values. In fact, by using the random forest’s computation regarding variable importance, a model with one third of the original features is still able to exceed 97% and 94% out-of-sample accuracy for random forest and GBM (multinomial) models, respectively.</p>
 </div>
 <div id="appendix-document-environment" class="section level2">
 <h2>Appendix: Document Environment</h2>

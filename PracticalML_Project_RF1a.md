@@ -49,42 +49,11 @@ These records are split into 30% training and 70% validation sets.  Note that my
 
 ## Random Forest Classification Using All Sensor Fields
 
-In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation.  The following is the results of this model training:
+In this work we perform the analysis by training a random forest classification model via the caret package and setting up the training parameters to perform 10-fold cross validation. Figure 1(a) shows that the of the model achieves perfect prediction (100% accuracy) on the training set.  One expects the out-of-sample accuracy (accuracy of the model on data not in the training set) to be less, and indeed the Figure 1(b) shows the validation set accuracy to be 97.87%.  Note that this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
 
 
-```
-## Random Forest 
-## 
-## 5889 samples
-##   52 predictor
-##    5 classes: 'A', 'B', 'C', 'D', 'E' 
-## 
-## No pre-processing
-## Resampling: Cross-Validated (10 fold) 
-## 
-## Summary of sample sizes: 5300, 5299, 5301, 5300, 5299, 5300, ... 
-## 
-## Resampling results across tuning parameters:
-## 
-##   mtry  Accuracy   Kappa      Accuracy SD  Kappa SD   
-##    2    0.9769028  0.9707680  0.007609952  0.009634983
-##   27    0.9811533  0.9761504  0.005846279  0.007399336
-##   52    0.9762314  0.9699242  0.007055736  0.008930496
-## 
-## Accuracy was used to select the optimal model using  the largest value.
-## The final value used for the model was mtry = 27.
-```
-
-The following shows that the of the model achieves perfect prediction (100% accuracy) on the training set:
-
-
-```r
-confusionMatrix(predict(rf_model, newdata=training), training$classe)
-```
 
 ```
-## Confusion Matrix and Statistics
-## 
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1674    0    0    0    0
@@ -92,40 +61,10 @@ confusionMatrix(predict(rf_model, newdata=training), training$classe)
 ##          C    0    0 1027    0    0
 ##          D    0    0    0  965    0
 ##          E    0    0    0    0 1083
-## 
-## Overall Statistics
-##                                      
-##                Accuracy : 1          
-##                  95% CI : (0.9994, 1)
-##     No Information Rate : 0.2843     
-##     P-Value [Acc > NIR] : < 2.2e-16  
-##                                      
-##                   Kappa : 1          
-##  Mcnemar's Test P-Value : NA         
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Specificity            1.0000   1.0000   1.0000   1.0000   1.0000
-## Pos Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Neg Pred Value         1.0000   1.0000   1.0000   1.0000   1.0000
-## Prevalence             0.2843   0.1936   0.1744   0.1639   0.1839
-## Detection Rate         0.2843   0.1936   0.1744   0.1639   0.1839
-## Detection Prevalence   0.2843   0.1936   0.1744   0.1639   0.1839
-## Balanced Accuracy      1.0000   1.0000   1.0000   1.0000   1.0000
 ```
-
-One expects the out-of-sample accuracy to be less, and indeed the following shows the validation set accuracy to be 97.87%:
-
-
-```r
-confusionMatrix(predict(rf_model, newdata=testing), testing$classe)
-```
+*(a) Perfomance on the training set.*
 
 ```
-## Confusion Matrix and Statistics
-## 
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 3886   69    0    0    0
@@ -133,50 +72,29 @@ confusionMatrix(predict(rf_model, newdata=testing), testing$classe)
 ##          C    3   24 2332   44   12
 ##          D    0    2   16 2185   32
 ##          E    0    1    0   21 2476
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.9787         
-##                  95% CI : (0.9761, 0.981)
-##     No Information Rate : 0.2844         
-##     P-Value [Acc > NIR] : < 2.2e-16      
-##                                          
-##                   Kappa : 0.973          
-##  Mcnemar's Test P-Value : NA             
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9949   0.9639   0.9737   0.9707   0.9810
-## Specificity            0.9930   0.9938   0.9927   0.9956   0.9980
-## Pos Pred Value         0.9826   0.9738   0.9656   0.9776   0.9912
-## Neg Pred Value         0.9980   0.9914   0.9944   0.9943   0.9957
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2830   0.1865   0.1698   0.1591   0.1803
-## Detection Prevalence   0.2880   0.1915   0.1759   0.1627   0.1819
-## Balanced Accuracy      0.9939   0.9788   0.9832   0.9832   0.9895
 ```
+*(b) Performance on the validation set.*
 
-Note: this model achieved perfect classification of the 20 records in the testing data for the programming submission portion of this exercise.
+*Figure 1. Performance of the random forest model against the (a) training set showing 100% accuracy, and (b) validation set showning 97.87% accuracy.*
 
 ## Reduced Dataset
 
-Training the random forest model on all the sensor values took a long time so I decided to use variable importance to reduce the set of features further.  The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):
+Training the random forest model on all the sensor values took a long time, so I decided to use variable importance to reduce the set of features further.  The following figure shows what the random forest algorithm considers the 30 most important sensor variables (most important at the top):
 
 ![](PracticalML_Project_RF1a_files/figure-html/varimp-1.png) 
 
-From this, the 17 most important variables are extractd and used to train a random forest model and a for comparison.
+*Figure 2. Variable importance computed when training the random forest model.*
+
+From this, the 17 most important variables are extracted and used to train a random forest model and a generalized boosted regression model (GBM) for comparison.
 
 
 
 #### Random Forest Model (Reduced Dataset)
 
-Using the top 17 (about on third) most "important" variables from above, another random forest model is trained.  It also achieved perfect accuracy on the training set with the following results using the validation set:
+Using the top 17 (about on third) most "important" variables from above, another random forest model is trained.  It also achieved perfect accuracy on the training set.  The accuracy of the model using the validation set is shown by the confusion matrix in Figure 3 to be 97.18%
 
 
 ```
-## Confusion Matrix and Statistics
-## 
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 3881   72    3    4    1
@@ -184,40 +102,17 @@ Using the top 17 (about on third) most "important" variables from above, another
 ##          C    2   41 2298   64    9
 ##          D    2    6   37 2162   22
 ##          E    0    4    0   20 2473
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.972           
-##                  95% CI : (0.9691, 0.9747)
-##     No Information Rate : 0.2844          
-##     P-Value [Acc > NIR] : < 2.2e-16       
-##                                           
-##                   Kappa : 0.9645          
-##  Mcnemar's Test P-Value : 1.44e-09        
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9936   0.9537   0.9595   0.9605   0.9798
-## Specificity            0.9919   0.9912   0.9898   0.9942   0.9979
-## Pos Pred Value         0.9798   0.9628   0.9519   0.9699   0.9904
-## Neg Pred Value         0.9974   0.9889   0.9914   0.9923   0.9955
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2826   0.1845   0.1673   0.1574   0.1801
-## Detection Prevalence   0.2884   0.1917   0.1758   0.1623   0.1818
-## Balanced Accuracy      0.9927   0.9724   0.9746   0.9773   0.9888
 ```
 
-As expected the out-of-sample accuracy is only slightly lower at 97.18%
+*Figure 3. Perfomance on the validation data of the random forest model trained from a reduced set of features (note that it achieved perfect accuracy on the training set).*
+
 
 #### Generalized Boosted Regression Model (Reduced Dataset)
 
-In this section, a GBM model (distribution = "multinomial") is trained on the reduced dataset (with 17 features) for comparison with the random forest model.  For this model the training set accuracy is 96.98% accuracy:
+In this section, a GBM model (distribution = "multinomial") is trained on the reduced dataset (with 17 features) for comparison with the random forest model.  As shown in Figure 4, the training set accuracy for this model the training is 96.98%.  The out of sample accuracy using the validation set still very good at 94.26%.
 
 
 ```
-## Confusion Matrix and Statistics
-## 
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1647   21    1    1    0
@@ -225,36 +120,10 @@ In this section, a GBM model (distribution = "multinomial") is trained on the re
 ##          C   12   27  981   20   10
 ##          D    3    5   16  940    8
 ##          E    1    2    2    0 1058
-## 
-## Overall Statistics
-##                                          
-##                Accuracy : 0.9698         
-##                  95% CI : (0.9651, 0.974)
-##     No Information Rate : 0.2843         
-##     P-Value [Acc > NIR] : < 2.2e-16      
-##                                          
-##                   Kappa : 0.9618         
-##  Mcnemar's Test P-Value : 0.000565       
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9839   0.9518   0.9552   0.9741   0.9769
-## Specificity            0.9945   0.9897   0.9858   0.9935   0.9990
-## Pos Pred Value         0.9862   0.9568   0.9343   0.9671   0.9953
-## Neg Pred Value         0.9936   0.9884   0.9905   0.9949   0.9948
-## Prevalence             0.2843   0.1936   0.1744   0.1639   0.1839
-## Detection Rate         0.2797   0.1842   0.1666   0.1596   0.1797
-## Detection Prevalence   0.2836   0.1926   0.1783   0.1651   0.1805
-## Balanced Accuracy      0.9892   0.9707   0.9705   0.9838   0.9879
 ```
-
-But the out of sample accuracy is still respectable at 94.26%.
-
+*(a) training set*
 
 ```
-## Confusion Matrix and Statistics
-## 
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 3788  108    5    5    7
@@ -262,33 +131,15 @@ But the out of sample accuracy is still respectable at 94.26%.
 ##          C   32   90 2197   89   31
 ##          D   18   14   68 2138   37
 ##          E    3   22    4   11 2399
-## 
-## Overall Statistics
-##                                           
-##                Accuracy : 0.9426          
-##                  95% CI : (0.9386, 0.9465)
-##     No Information Rate : 0.2844          
-##     P-Value [Acc > NIR] : < 2.2e-16       
-##                                           
-##                   Kappa : 0.9274          
-##  Mcnemar's Test P-Value : 8.061e-16       
-## 
-## Statistics by Class:
-## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            0.9698   0.9119   0.9173   0.9498   0.9505
-## Specificity            0.9873   0.9780   0.9787   0.9881   0.9964
-## Pos Pred Value         0.9681   0.9085   0.9008   0.9398   0.9836
-## Neg Pred Value         0.9880   0.9789   0.9825   0.9901   0.9889
-## Prevalence             0.2844   0.1935   0.1744   0.1639   0.1838
-## Detection Rate         0.2758   0.1764   0.1600   0.1557   0.1747
-## Detection Prevalence   0.2849   0.1942   0.1776   0.1657   0.1776
-## Balanced Accuracy      0.9785   0.9450   0.9480   0.9689   0.9735
 ```
+*(b) validation set*
+
+*Figure 4. Confusion matrix for GBM model using a reduced set of features.*
+
 
 ## Conclusion
 
-Both the random forest and GBM (multinomial) models are both very accurate at determining the "classe" of a given set of raw sensor values.  In fact, by using the random forest's guidance with variable importance, a model with one third of the original features is still able to exceed 97% and 94% out of sample accuracy for random forest and GBM models respectively.
+Both the random forest and GBM models are both very accurate at determining the "classe" of a given set of raw sensor values.  In fact, by using the random forest's computation regarding variable importance, a model with one third of the original features is still able to exceed 97% and 94% out-of-sample accuracy for random forest and GBM (multinomial) models, respectively.
 
 ## Appendix: Document Environment
 
